@@ -11,8 +11,6 @@ CFD - Pontificia Universidad Javeriana
 
 import numpy as np
 import numpy.linalg as nl
-import scipy.sparse as sp
-from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from matplotlib import style
 
@@ -26,7 +24,7 @@ def Regularization(K):
     ax.spy(K)
     ax.set_title('treated matrix')
     plt.draw()
-    plt.pause(5)
+    plt.pause(2)
     plt.close()
     
     # Setting up tolerance for checking
@@ -62,8 +60,6 @@ def Regularization(K):
     q = (u[:,-1])
     q = np.reshape(q, (1, len(u)))
     qt = np.reshape(q, (len(u), 1))
-    print(q)
-    print(qt)
         
     # Plotting the numerical line that locates the position of the singular 
     # values / eigenvalues found inside the if clause    
@@ -82,19 +78,14 @@ def Regularization(K):
     plt.pause(3)
     plt.close()
     
-#    # This part has to be reevaluated. If there is any option to get the 
-#    # solutions of the program this is not necessary
-#    # Solving a linear system to find the eigenvector corresponding to the 
-#    # smallest eigenvalue [A - (lambda) * I] * qqv = 0
-#    nn = K.shape[0]
-#    K1 = K - np.eye(nn) * np.max(eig_val)
-#      
-    
-    # This is a MATRIX, if it is a dot product between the two vectors, the 
+   # This is a MATRIX, if it is a dot product between the two vectors, the 
     # value of qqt would be 1.0, since the eigenvectors (or singular vectors),
     # are unitary
     qqt = np.matmul(qt, q)
+    print('Condition number for pressure matrix: ', nl.cond(qqt))
     
+    # Checking the final result of the function (testing part) - 
+    # comment/uncomment to se differences and matrix construction
 #    print(qqt)
    
     return qqt
