@@ -12,6 +12,7 @@ Created on Fri May 18 10:08:05 2018
 # Python libraries imported to do calculations, plots and stuff
 import numpy as np
 import scipy.sparse as sp
+from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib import style
@@ -34,7 +35,7 @@ XF = 1                              # Final x coordinate [m]
 Y0 = 0                              # Initial y coordinate [m]
 YF = 1                              # Final y coordinate [m]
 t0 = 0                              # Initial time [s]
-tF = 10000                          # Final time of the simulation [s]
+tF = 100                            # Final time of the simulation [s]
 rho = 1000                          # Fluid density [kg /m3] 
 nu = 1e-6                           # Kinematic viscosity [m2/s]
 Re = 50                             # Reynolds number of the flow [-]
@@ -81,6 +82,7 @@ YS0 = Y0 / h                        # Initial Y coordinate in non dim form [-]
 YSF = YF / h                        # Final Y coordinate in non dim form [-]
 ts0 = t0 * U / h                    # Initial non dimensional time [-]
 tsF = tF * U / h                    # Final non dimensional time [-]
+BC1_u[1] = U                        # Applying velocity to BC
 
 # Calculations made with non dimensionalized and numerical variables. Vectors of
 # space, time and all of the things to make the model work
@@ -173,7 +175,7 @@ plt.close()
 # ==============================================================================
 
 
-for t in range(1, 3):
+for t in range(1, 2):
 #for t in range(1, nT + 1):
     
 # ==============================================================================    
@@ -216,16 +218,6 @@ for t in range(1, 3):
                         np.multiply(U0, fd.diffx(V0, dx, L_B, L_R, R_B, R_R, \
                         dift)))
                      
-    # Skew symmetric form for the non linear term. The term with two different 
-    # vectors is treated with primitive variables
-    elif nlt == 2:
-        
-        ugt = np.multiply(U0, U0)
-        vgt = np.multiply(V0, V0)
-        
-        print('Not programmed yet')
-        break
-    
     # Error message for wrong choice of non linear term treatment    
     else:
         
@@ -237,13 +229,62 @@ for t in range(1, 3):
     # Entering to the pressure calculation
 # ==============================================================================
     
-    # Taking the divergence of the hat velocity field
+    # Taking the divergence of the hat velocity field - it is not 0 necessarly
     divug = fd.diffx(Ug, dx, L_B, L_R, R_B, R_R, dift) + fd.diffy(Vg, dy, B_B, \
                     B_R, T_B, T_R, dift)
     
     # Multiplying the result by -1/dT
     divug *= (-1 / dT)
     
-    # Applying pressure regularization before solving the Laplacian for the 
+#    print('U hat divergence times -1/dT: ') # Printing statements for checking
+#    print(divug)                            # Printing statements for checking
+    
+    # Applying PRESSURE REGULARIZATION before solving the Laplacian for the 
     # pressure
+    RHS_p = divug - np.matmul(qqt, divug)
+    
+#    print('Vector de valores RHS: ')        # Printing statements for checking
+#    print(RHS_p)                            # Printing statements for checking
+    
+    # Pressure solver (meat part of the code) - This is a normal Poisson solver
+    # that will find a pressure field (remember that this is a Pressure field 
+    # that satisfies conditions, but it may be not the REAL pressure field)
+    
+    # Imposing boundary conditions - Homogeneous Neumann BC for pressure. 
+    # The regularization should make the system non singular
+    divug[B_B] = np.ones((Nx, 1)) * BC1_p[0]
+    divug[T_B] = np.ones((Nx, 1)) * BC1_p[1]
+    divug[L_B] = np.ones((Ny - 2, 1)) * BC1_p[2]
+    divug[R_B] = np.ones((Ny - 2, 1)) * BC1_p[3]
+        
+    # Solving the system
+    P1 = spsolve(P_m, divug)
+    
+    # Calculating u double hat with pressure
+    Ugg = Ug - dT * fd.diffx(P1, dx, L_B, L_R, R_B, R_R, dift)
+    Vgg = Vg - dT * fd.diffy(P1, dx, L_B, L_R, R_B, R_R, dift)
+    
+    # Checking incompressibility of field hat hat div(Uhh, Vhh)
+    # Fill later
+    
+# ==============================================================================
+    # Calculating the viscous term part
+# ==============================================================================
+    
+    # Imposing boundary conditions for solving the viscous term
+    # Boundary conditions for u velocity
+    Ugg[B_B] = np.ones((Nx, 1)) * BC1_u[0]
+    Ugg[T_B] = np.ones((Nx, 1)) * BC1_u[1]
+    Ugg[L_B] = np.ones((Ny - 2, 1)) * BC1_u[2]
+    Ugg[R_B] = np.ones((Ny - 2, 1)) * BC1_u[3]
+    
+    # Boundary conditions for v velocity
+    Vgg[B_B] = np.ones((Nx, 1)) * BC1_v[0]
+    Vgg[T_B] = np.ones((Nx, 1)) * BC1_v[1]
+    Vgg[L_B] = np.ones((Ny - 2, 1)) * BC1_v[2]
+    Vgg[R_B] = np.ones((Ny - 2, 1)) * BC1_v[3]
+    
+    # Calculating the diffusive term
+    U1 = spsolve(K_x, Ugg)
+    V1 = spsolve(K_y, Vgg)   
     
