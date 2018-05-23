@@ -35,19 +35,19 @@ YF = 1.                             # Final y coordinate [m]
 t0 = 0.                             # Initial time [s]
 tF = 100.                           # Final time of the simulation [s]
 rho = 100.                          # Fluid density [kg /m3] 
-nu = 1e-6                           # Kinematic viscosity [m2/s]
-Re = 50.                            # Reynolds number of the flow [-]
+nu = 1e-1                           # Kinematic viscosity [m2/s]
+Re = 1.                             # Reynolds number of the flow [-]
 
 # ==============================================================================
 # NUMERICAL PARAMETERS OF THE MODEL - MODIFIABLE PART OF THE CODE
 # ==============================================================================
 
-Nx = 51                             # Nodes in the x direction
-Ny = 51                             # Nodes in the y direction
-CFL = 0.45                          # Non dimensional timestep size [-]
+Nx = 7                              # Nodes in the x direction (use odd, please)
+Ny = 7                              # Nodes in the y direction (use odd, please)
+CFL = 0.5                           # Non dimensional timestep size [-]
 nlt = 0                             # Non linear term treatment (view t. loop)
-dift = 0                            # First derivative precision (view funct)
-Der2 = 0                            # Second derivative precision (view funct)
+dift = 1                            # First derivative precision (view funct)
+Der2 = 1                            # Second derivative precision (view funct)
 
 # ==============================================================================
 # BOUNDARY CONDITIONS OF THE PROBLEM - MODIFIABLE PART OF THE CODE
@@ -105,7 +105,7 @@ maxd = np.maximum(dx, dy)           # Maximum cell size for timestep calculation
 
 
 tT = tsF - ts0                      # Total time of the simulation
-dT = CFL * maxd                     # Timestep size in dim form [s]
+dT = CFL * maxd * U                 # Timestep size in dim form [s]
 nT = int(np.ceil(tT / dT))          # Number of timesteps of the model             
 del(maxd)                           # Deleting useless variable 
 
@@ -121,6 +121,21 @@ print('Number of time steps for the simulation: ', nT)
 print('Timestep size for the simulation: ', dT)
 print('#######################################################################')
 print('\n')
+
+# Selecting nodes in the centerlines (vertical and horizontal of the domain)
+# to plot velocity profiles
+n0x = Nx * ((Ny - 1) / 2)           # First node of center line x
+n1x = n0x + (Nx - 1)                # Last node of center line x
+clx = np.linspace(n0x, n1x, Nx)     # Array with nodes that mark horizontal CL
+clx = clx.astype(int)
+
+n0y = (Nx - 1) / 2                  # First node of center line y
+n1y = n0y + Nx * (Ny - 1)           # Last node of center line y
+cly = np.linspace(n0y, n1y, Ny)     # Array with nodes that mark vertical CL
+cly = cly.astype(int)
+
+xr = np.linspace(0, 1, Nx)          # Vector to plot velocities along CL
+yr = np.linspace(0, 1, Ny)          # Vector to plot velocities along CL
 
 # Declaring variables that will store temporal values, differentiation matrices
 # and other necessary values
@@ -185,8 +200,8 @@ plt.ion()
 style.use('ggplot')
 plt.figure(1, figsize=(11.5, 11.5))
 
-for t in range(1, 20):
-#for t in range(1, nT + 1):
+#for t in range(1, 20):
+for t in range(1, nT + 1):
     
 # ==============================================================================    
     # Calculating the non linear term with forward Euler explicit scheme
@@ -221,11 +236,11 @@ for t in range(1, 20):
         vgt = V0 ** 2
         
         Ug = U0 - dT * (0.5 * fd.diffx(ugt, dx, L_B, L_R, R_B, R_R, dift) + \
-                        np.multiply(V0, fd.diffy(U0, dy, B_B, B_R, T_B, T_R, \
+                        np.multiply(V0, fd.diffy(U0, dy, B_B, B_R, T_B, T_R,\
                         dift)))
         
         Vg = V0 - dT * (0.5 * fd.diffy(vgt, dy, B_B, B_R, T_B, T_R, dift) + \
-                        np.multiply(U0, fd.diffx(V0, dx, L_B, L_R, R_B, R_R, \
+                        np.multiply(U0, fd.diffx(V0, dx, L_B, L_R, R_B, R_R,\
                         dift)))
                      
     # Error message for wrong choice of non linear term treatment    
@@ -260,7 +275,7 @@ for t in range(1, 20):
 # ==============================================================================
     
     # Taking the divergence of the hat velocity field - it is not 0 necessarly
-    divug = fd.diffx(Ug, dx, L_B, L_R, R_B, R_R, dift) + fd.diffy(Vg, dy, B_B, \
+    divug = fd.diffx(Ug, dx, L_B, L_R, R_B, R_R, dift) + fd.diffy(Vg, dy, B_B,\
                     B_R, T_B, T_R, dift)
     
     # Multiplying the result by -1/dT
@@ -325,8 +340,11 @@ for t in range(1, 20):
     # Calculating velocity magnitude
     mag = np.multiply(U1, V1)
     
-    print('Mass conservation in each node (should be 0): ')
-    print(Cons_m)
+#    print('Mass conservation in each node (should be 0): ')
+#    print(Cons_m)
+    
+#   Extracting u and v in the center of the domain
+    
     
 # ==============================================================================
     # Plotting velocities u and v, magnitude and pressure
@@ -335,7 +353,7 @@ for t in range(1, 20):
     # Plotting the solution
     plt.clf()
     
-    fig1 = plt.subplot(2, 2, 1)
+    fig1 = plt.subplot(2, 3, 1)
     surf1 = fig1.contourf(X, Y, U1.reshape((Nx, Ny)), cmap=cm.coolwarm)
     fig1.set_xlim([X0, XF])
     fig1.set_ylim([Y0, YF])
@@ -344,7 +362,7 @@ for t in range(1, 20):
     fig1.tick_params(axis='both', which='major', labelsize=6)
     fig1.set_title('Numerical u velocity')
     
-    fig2 = plt.subplot(2, 2, 2)
+    fig2 = plt.subplot(2, 3, 2)
     surf2 = fig2.contourf(X, Y, V1.reshape((Nx, Ny)), cmap=cm.coolwarm)
     fig2.set_xlim([X0, XF])
     fig2.set_ylim([Y0, YF])
@@ -353,7 +371,7 @@ for t in range(1, 20):
     fig2.tick_params(axis='both', which='major', labelsize=6)
     fig2.set_title('Numerical v velocity')
     
-    fig3 = plt.subplot(2, 2, 3)
+    fig3 = plt.subplot(2, 3, 3)
     surf3 = fig3.contourf(X, Y, mag.reshape((Nx, Ny)), cmap=cm.coolwarm)
     fig3.set_xlim([X0, XF])
     fig3.set_ylim([Y0, YF])
@@ -362,14 +380,23 @@ for t in range(1, 20):
     fig3.tick_params(axis='both', which='major', labelsize=6)
     fig3.set_title('Velocity Magnitude')
     
-    fig4 = plt.subplot(2, 2, 4)
+    fig4 = plt.subplot(2, 3, 4)
     surf4 = fig4.contourf(X, Y, P1.reshape((Nx, Ny)), cmap=cm.coolwarm)
     fig4.set_xlim([X0, XF])
     fig4.set_ylim([Y0, YF])
     fig4.tick_params(axis='both', which='major', labelsize=6)
     fig4.set_xlabel(r'x axis')
     fig4.set_ylabel(r'y axis')
-    fig4.set_title('Pressure field') 
+    fig4.set_title('Pressure field')
+    
+    fig5 = plt.subplot(2, 3, 5)
+    surf5 = fig5.plot(X, Y, P1.reshape((Nx, Ny)), cmap=cm.coolwarm)
+    fig5.set_xlim([-0.3, 1.])
+    fig5.set_ylim([Y0, YF])
+    fig5.tick_params(axis='both', which='major', labelsize=6)
+    fig5.set_xlabel(r'u velocity')
+    fig5.set_ylabel(r'y axis')
+    fig5.set_title('U representative')
     
     plt.pause(0.01)
     
