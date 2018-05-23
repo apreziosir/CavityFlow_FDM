@@ -11,6 +11,12 @@ CFD - Pontificia Universidad Javeriana
 import numpy as np
 import Boundaries as bnd
 
+# ==============================================================================
+# Diffusion matrices assembly. 
+# If Der2 == 0 - order of second derivative approximation = 2
+# If Der2 == 1 - order of second derivative approximation = 4
+# ==============================================================================
+
 def Assembly(K, Nx, Ny, Sx, Sy, BC0, Der2):
     
     # Defining matrix according to number of nodes in the domain

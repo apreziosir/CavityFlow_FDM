@@ -19,7 +19,7 @@ def Regularization(K):
     # Spying K just for checking
     plt.ion()
     style.use('ggplot')
-    plt.figure()
+    plt.figure(1)
     ax = plt.gca()
     ax.spy(K)
     ax.set_title('treated matrix')
@@ -82,7 +82,9 @@ def Regularization(K):
     # value of qqt would be 1.0, since the eigenvectors (or singular vectors),
     # are unitary
     qqt = np.matmul(qt, q)
+    print('###################################################################')
     print('Condition number for pressure matrix: ', nl.cond(qqt))
+    print('###################################################################')
     
     # Checking the final result of the function (testing part) - 
     # comment/uncomment to se differences and matrix construction

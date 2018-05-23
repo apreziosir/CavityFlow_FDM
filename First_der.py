@@ -155,7 +155,7 @@ def diffy(v, dy, B_B, B_R, T_B, T_R, dift):
         B_R1 = np.append(B_R[0] - 1, B_R)
         B_R1 = np.append(B_R1, B_R[-1] + 1)
         T_R1 = np.append(T_R[0] - 1, T_R)
-        T_R1 = np.append(T_R1, T_R[-1] + 1)   
+        T_R1 = np.append(T_R1, T_R[-1] + 1)
         
         for i in range(0, nn):
             
@@ -177,7 +177,7 @@ def diffy(v, dy, B_B, B_R, T_B, T_R, dift):
                     
             # Testing if element is in top boundary - First order upwind since
             # it is a boundary
-            elif np.isin(i, T_B) : diffy[i] = (v[i] - v[i - Nx]) / dy
+            elif np.isin(i, T_B) : diffy[i] = (v[i] - v[i - Nx]) / dy               
                     
             # Testing if element is in top ring - Second order is applied only
             # if velocity is positive

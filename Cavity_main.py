@@ -28,28 +28,26 @@ import First_der as fd
 # DEFINITION OF PHYSICAL VARIABLES OF THE PROBLEM - MODIFIABLE PART OF THE CODE
 # ==============================================================================
 
-# Physical description of the domain
-
-X0 = 0                              # Inital x coordinate [m]
-XF = 1                              # Final x coordinate [m]
-Y0 = 0                              # Initial y coordinate [m]
-YF = 1                              # Final y coordinate [m]
-t0 = 0                              # Initial time [s]
-tF = 100                            # Final time of the simulation [s]
-rho = 1000                          # Fluid density [kg /m3] 
+X0 = 0.                             # Inital x coordinate [m]
+XF = 1.                             # Final x coordinate [m]
+Y0 = 0.                             # Initial y coordinate [m]
+YF = 1.                             # Final y coordinate [m]
+t0 = 0.                             # Initial time [s]
+tF = 100.                           # Final time of the simulation [s]
+rho = 100.                          # Fluid density [kg /m3] 
 nu = 1e-6                           # Kinematic viscosity [m2/s]
-Re = 50                             # Reynolds number of the flow [-]
+Re = 50.                            # Reynolds number of the flow [-]
 
 # ==============================================================================
 # NUMERICAL PARAMETERS OF THE MODEL - MODIFIABLE PART OF THE CODE
 # ==============================================================================
 
-Nx = 10                             # Nodes in the x direction
-Ny = 10                             # Nodes in the y direction
-dT = 1e-1                           # Non dimensional timestep size [-]
+Nx = 51                             # Nodes in the x direction
+Ny = 51                             # Nodes in the y direction
+CFL = 0.45                          # Non dimensional timestep size [-]
 nlt = 0                             # Non linear term treatment (view t. loop)
 dift = 0                            # First derivative precision (view funct)
-Der2 = 1                            # Second derivative precision (view funct)
+Der2 = 0                            # Second derivative precision (view funct)
 
 # ==============================================================================
 # BOUNDARY CONDITIONS OF THE PROBLEM - MODIFIABLE PART OF THE CODE
@@ -61,10 +59,10 @@ BC0_u = np.array([0, 0, 0, 0])      # Type of boundary condition for u
 BC0_v = np.array([0, 0, 0, 0])      # Type of boundary condition for v
 BC0_p = np.array([1, 1, 1, 1])      # Type of boundary condition for pressure
 
-# Value of boundary condition
-BC1_u = np.array([0, 1, 0, 0])      # Value of boundary condition in u
-BC1_v = np.array([0, 0, 0, 0])      # Value of boundary condition in v
-BC1_p = np.array([0, 0, 0, 0])      # Value of boundary condition for pressure
+# Value of boundary condition (this has to be declared as float not as int)
+BC1_u = np.array([0., 1., 0., 0.])  # Value of boundary condition in u
+BC1_v = np.array([0., 0., 0., 0.])  # Value of boundary condition in v
+BC1_p = np.array([0., 0., 0., 0.])  # Value of boundary condition for pressure
 
 # ==============================================================================
 # START OF THE PROGRAM - INITIAL CALCULATIONS. ASSEMBLYING VECTORS FOR SPACE, 
@@ -105,16 +103,24 @@ dx = np.absolute(xn[1] - xn[0])     # Cell size in x direction
 dy = np.absolute(yn[1] - yn[0])     # Cell size in y direction
 maxd = np.maximum(dx, dy)           # Maximum cell size for timestep calculation
 
+
 tT = tsF - ts0                      # Total time of the simulation
-CFL = U * dT / maxd                 # Timestep size in non dim form [-]
+dT = CFL * maxd                     # Timestep size in dim form [s]
 nT = int(np.ceil(tT / dT))          # Number of timesteps of the model             
 del(maxd)                           # Deleting useless variable 
 
 Sx = dT / Re                        # Value for viscous term matrix
 
-# Printing interesting results for the simulation
+# Printing interesting results for the simulation - just to check if the 
+# set up is correct. 
+print('#######################################################################')
 print('Maximum CFL for simulation: ', CFL)
+print('Lid velocity [m/s]', U)
 print('Stability parameter for viscous term: ', Sx)
+print('Number of time steps for the simulation: ', nT)
+print('Timestep size for the simulation: ', dT)
+print('#######################################################################')
+print('\n')
 
 # Declaring variables that will store temporal values, differentiation matrices
 # and other necessary values
@@ -146,8 +152,9 @@ qqt = pr.Regularization(P_m)
 [U0, V0] = ic.Init_cond(X, Y)
 
 # Plotting initial condition
+plt.ion()
 style.use('ggplot')
-plt.figure(1, figsize=(20, 15))
+plt.figure(1)
 
 fig1 = plt.subplot(1, 2, 1)
 surf1 = fig1.contourf(X, Y, U0, cmap=cm.coolwarm, antialiased=False)
@@ -174,8 +181,11 @@ plt.close()
 # TIME LOOP OF THE PROGRAM - 
 # ==============================================================================
 
+plt.ion()
+style.use('ggplot')
+plt.figure(1, figsize=(11.5, 11.5))
 
-for t in range(1, 2):
+for t in range(1, 20):
 #for t in range(1, nT + 1):
     
 # ==============================================================================    
@@ -225,6 +235,26 @@ for t in range(1, 2):
                part of the code and make a good selection')
         break
     
+    # Imposing boundary conditions (using same boundary conditions of the origi-
+    # nal problem) - implemented after any of the chosen schemes for the non 
+    # linear terms
+    
+    # Horizontal (U) velocity
+    Ug[B_B] = np.ones((Nx, 1)) * BC1_u[0]
+    Ug[T_B] = np.ones((Nx, 1)) * BC1_u[1]
+    Ug[L_B] = np.ones((Nx - 2, 1)) * BC1_u[2]
+    Ug[R_B] = np.ones((Nx - 2, 1)) * BC1_u[3]
+    
+    # Vertical (V) velocity
+    Vg[B_B] = np.ones((Nx, 1)) * BC1_v[0]
+    Vg[T_B] = np.ones((Nx, 1)) * BC1_v[1]
+    Vg[L_B] = np.ones((Nx - 2, 1)) * BC1_v[2]
+    Vg[R_B] = np.ones((Nx - 2, 1)) * BC1_v[3]
+    
+#    # Checking values of hat velocities
+#    print(Ug[T_B])
+#    print(Vg[T_B])    
+    
 # ==============================================================================
     # Entering to the pressure calculation
 # ==============================================================================
@@ -262,7 +292,7 @@ for t in range(1, 2):
     
     # Calculating u double hat with pressure
     Ugg = Ug - dT * fd.diffx(P1, dx, L_B, L_R, R_B, R_R, dift)
-    Vgg = Vg - dT * fd.diffy(P1, dx, L_B, L_R, R_B, R_R, dift)
+    Vgg = Vg - dT * fd.diffy(P1, dy, B_B, B_R, T_B, T_R, dift)
     
     # Checking incompressibility of field hat hat div(Uhh, Vhh)
     # Fill later
@@ -286,5 +316,67 @@ for t in range(1, 2):
     
     # Calculating the diffusive term
     U1 = spsolve(K_x, Ugg)
-    V1 = spsolve(K_y, Vgg)   
+    V1 = spsolve(K_y, Vgg)
+    
+    # Checking flow incompressibility
+    Cons_m = fd.diffx(U1, dx, L_B, L_R, R_B, R_R, dift) + fd.diffy(V1, dy, B_B, \
+                    B_R, T_B, T_R, dift)
+    
+    # Calculating velocity magnitude
+    mag = np.multiply(U1, V1)
+    
+    print('Mass conservation in each node (should be 0): ')
+    print(Cons_m)
+    
+# ==============================================================================
+    # Plotting velocities u and v, magnitude and pressure
+# ==============================================================================
+    
+    # Plotting the solution
+    plt.clf()
+    
+    fig1 = plt.subplot(2, 2, 1)
+    surf1 = fig1.contourf(X, Y, U1.reshape((Nx, Ny)), cmap=cm.coolwarm)
+    fig1.set_xlim([X0, XF])
+    fig1.set_ylim([Y0, YF])
+    fig1.set_xlabel(r'x axis')
+    fig1.set_ylabel(r'y axis')
+    fig1.tick_params(axis='both', which='major', labelsize=6)
+    fig1.set_title('Numerical u velocity')
+    
+    fig2 = plt.subplot(2, 2, 2)
+    surf2 = fig2.contourf(X, Y, V1.reshape((Nx, Ny)), cmap=cm.coolwarm)
+    fig2.set_xlim([X0, XF])
+    fig2.set_ylim([Y0, YF])
+    fig2.set_xlabel(r'x axis')
+    fig2.set_ylabel(r'y axis')
+    fig2.tick_params(axis='both', which='major', labelsize=6)
+    fig2.set_title('Numerical v velocity')
+    
+    fig3 = plt.subplot(2, 2, 3)
+    surf3 = fig3.contourf(X, Y, mag.reshape((Nx, Ny)), cmap=cm.coolwarm)
+    fig3.set_xlim([X0, XF])
+    fig3.set_ylim([Y0, YF])
+    fig3.set_xlabel(r'x axis')
+    fig3.set_ylabel(r'y axis')
+    fig3.tick_params(axis='both', which='major', labelsize=6)
+    fig3.set_title('Velocity Magnitude')
+    
+    fig4 = plt.subplot(2, 2, 4)
+    surf4 = fig4.contourf(X, Y, P1.reshape((Nx, Ny)), cmap=cm.coolwarm)
+    fig4.set_xlim([X0, XF])
+    fig4.set_ylim([Y0, YF])
+    fig4.tick_params(axis='both', which='major', labelsize=6)
+    fig4.set_xlabel(r'x axis')
+    fig4.set_ylabel(r'y axis')
+    fig4.set_title('Pressure field') 
+    
+    plt.pause(0.01)
+    
+# ==============================================================================
+    # Updating values for next step
+# ==============================================================================
+    
+    U0 = U1
+    V0 = V1
     
