@@ -122,7 +122,7 @@ def diffx(u, dx, L_B, L_R, R_B, R_R, dift):
 def diffy(v, dy, B_B, B_R, T_B, T_R, dift):
     
     # Parameters that can be changed for convenience when running the function
-    q = 0.5
+    q = 0.3
     
     # Defining vector that will store the derivative - column vector like the 
     # one that enters to the function

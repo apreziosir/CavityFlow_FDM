@@ -3,10 +3,9 @@
 """
 Cavity flow solver with FDM. Pressure regularization and fractional steps 
 implemented for the solution of the scheme.
-The non dimensional form of the Navier-Stokes equations is used in this solver 
-for simplicity purposes
 Created on Fri May 18 10:08:05 2018
 @author: Antonio Preziosi-Ribero
+CFD - Pontificia Universidad Javeriana
 """
 
 # Python libraries imported to do calculations, plots and stuff
@@ -16,7 +15,6 @@ from scipy.sparse.linalg import spsolve
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib import style
-from mpl_toolkits.mplot3d import Axes3D
 
 # Self made modules to perform specifical operations of the program
 import Mat_ass as ma
@@ -35,22 +33,20 @@ Y0 = 0.                             # Initial y coordinate [m]
 YF = 1.                             # Final y coordinate [m]
 t0 = 0.                             # Initial time [s]
 tF = 100.                           # Final time of the simulation [s]
-rho = 1000.                         # Fluid density [kg /m3] 
+rho = 100.                          # Fluid density [kg /m3] 
 nu = 1e-1                           # Kinematic viscosity [m2/s]
-Re = 100.                           # Reynolds number of the flow [-]
+U = 1.                              # Top lid velocity [m/s]
 
 # ==============================================================================
 # NUMERICAL PARAMETERS OF THE MODEL - MODIFIABLE PART OF THE CODE
 # ==============================================================================
 
-Nx = 51                             # Nodes in the x direction (use odd, please)
-Ny = 51                             # Nodes in the y direction (use odd, please)
-CFL = 0.1                           # Non dimensional timestep size [-]
+Nx = 7                              # Nodes in the x direction (use odd, please)
+Ny = 7                              # Nodes in the y direction (use odd, please)
+CFL = 0.5                           # Non dimensional timestep size [-]
 nlt = 0                             # Non linear term treatment (view t. loop)
 dift = 1                            # First derivative precision (view funct)
 Der2 = 1                            # Second derivative precision (view funct)
-reg = 1                             # P. regularization (0 = False, 1 = True)
-tn = Nx                             # Tied node when pressure is not regularized
 
 # ==============================================================================
 # BOUNDARY CONDITIONS OF THE PROBLEM - MODIFIABLE PART OF THE CODE
@@ -60,37 +56,30 @@ tn = Nx                             # Tied node when pressure is not regularized
 # Type of boundary condition. 0 = Dirichlet, 1 = Neumann
 BC0_u = np.array([0, 0, 0, 0])      # Type of boundary condition for u
 BC0_v = np.array([0, 0, 0, 0])      # Type of boundary condition for v
-BC0_p = np.array([1, 1, 1, 1])      # Type of BC for pressure
+BC0_p = np.array([1, 1, 1, 1])      # Type of boundary condition for pressure
 
 # Value of boundary condition (this has to be declared as float not as int)
-BC1_u = np.array([0., 1., 0., 0.])  # Value of boundary condition in u
+BC1_u = np.array([0., U, 0., 0.])  # Value of boundary condition in u
 BC1_v = np.array([0., 0., 0., 0.])  # Value of boundary condition in v
-BC1_p = np.array([0., 0., 0., 0.])  # Value of BC for pressure
+BC1_p = np.array([0., 0., 0., 0.])  # Value of boundary condition for pressure
 
 # ==============================================================================
 # START OF THE PROGRAM - INITIAL CALCULATIONS. ASSEMBLYING VECTORS FOR SPACE, 
 # TIME, ERROR AND OTHER STUFF FOR DIFFERENT PURPOSES
 # ==============================================================================
 
-# Calculations made with the physical variables to non-dimentionalize the N-S
-# equations (no need to change things here when running the program)
+# Calculations made with the physical variables 
 
 h = XF - X0                         # Characteristic length [m]
-U = (Re * nu) / h                   # Lid velocity [m/s]
-XS0 = X0 / h                        # Initial X coordinate in non dim form [-]
-XSF = XF / h                        # Final X coordinate in non dim form [-]
-YS0 = Y0 / h                        # Initial Y coordinate in non dim form [-]
-YSF = YF / h                        # Final Y coordinate in non dim form [-]
-ts0 = t0 * U / h                    # Initial non dimensional time [-]
-tsF = tF * U / h                    # Final non dimensional time [-]
+Re = U * h / nu                     # Reynolds number
 
 # Calculations made with non dimensionalized and numerical variables. Vectors of
 # space, time and all of the things to make the model work
 
 nn = Nx * Ny                        # Number of nodes in the domain
 
-xn = np.linspace(XS0, XSF, Nx)      # Spatial vector for the x axis
-yn = np.linspace(YS0, YSF, Ny)      # Spatial vector for the y axis
+xn = np.linspace(X0, XF, Nx)        # Spatial vector for the x axis
+yn = np.linspace(Y0, YF, Ny)        # Spatial vector for the y axis
 
 [X, Y] = np.meshgrid(xn, yn)        # Generating meshgrid for plotting
 
@@ -105,22 +94,20 @@ dx = np.absolute(xn[1] - xn[0])     # Cell size in x direction
 dy = np.absolute(yn[1] - yn[0])     # Cell size in y direction
 maxd = np.maximum(dx, dy)           # Maximum cell size for timestep calculation
 
-tT = tsF - ts0                      # Total time of the simulation
-dT = CFL * maxd                     # Timestep size in dim form [s]
+
+tT = tF - t0                        # Total time of the simulation
+dT = CFL * maxd / U                 # Timestep size in dim form [s]
 nT = int(np.ceil(tT / dT))          # Number of timesteps of the model             
 del(maxd)                           # Deleting useless variable 
 
-Sx_x = dT / (Re * dx ** 2)          # Value for viscous term matrix in x
-Sx_y = dT / (Re * dy ** 2)          # Value for viscous term matrix in y
-Sp_x = -1 / (dx ** 2)               # Value for pressure matrix in x
-Sp_y = -1 / (dy ** 2)               # Value for pressure matrix in y
+Sx = dT / Re                        # Value for viscous term matrix
 
 # Printing interesting results for the simulation - just to check if the 
 # set up is correct. 
 print('#######################################################################')
 print('Maximum CFL for simulation: ', CFL)
 print('Lid velocity [m/s]', U)
-print('Stability parameter for viscous term: ', Sx_x, Sx_y)
+print('Stability parameter for viscous term: ', Sx)
 print('Number of time steps for the simulation: ', nT)
 print('Timestep size for the simulation: ', dT)
 print('#######################################################################')
@@ -148,13 +135,9 @@ K_y = sp.lil_matrix((nn, nn))       # Viscous term diff matrix for v
 P_m = sp.lil_matrix((nn, nn))       # Laplacian matrix for pressure
 
 # Assemblying matrix with different boundary conditions
-K_x = ma.Assembly(K_x, Nx, Ny, Sx_x, Sx_y, BC0_u, Der2)
-K_y = ma.Assembly(K_y, Nx, Ny, Sx_x, Sx_y, BC0_v, Der2)
-P_m = ma.Assembly(P_m, Nx, Ny, Sp_x, Sp_y, BC0_p, Der2)
-
-if reg == 0:
-    P_m[tn, :] = np.zeros(nn)
-    P_m[tn, tn] = 1.
+K_x = ma.Assembly(K_x, Nx, Ny, Sx, Sx, BC0_u, Der2)
+K_y = ma.Assembly(K_y, Nx, Ny, Sx, Sx, BC0_v, Der2)
+P_m = ma.Assembly(P_m, Nx, Ny, 1, 1, BC0_p, Der2)
 
 # Converting matrices to CSR format for faster calculations - just for practical 
 # ends. It does not affect computations
@@ -165,8 +148,7 @@ P_m = P_m.tocsr()
 # Performing pressure regularization via external function. See external 
 # function for further information (this is goingo to be used in the temporal 
 # loop of the program to regularize pressure with Neumann BC) 
-if reg == 1 : qqt = pr.Regularization(P_m)
-else : qqt = 1.0
+qqt = pr.Regularization(P_m)
 
 # ==============================================================================
 # INITIAL CONIDTION FOR THE CAVITY PROBLEM - USUALLY IT IS A U = 0 AND V = 0
@@ -295,8 +277,7 @@ for t in range(1, nT + 1):
     
     # Applying PRESSURE REGULARIZATION before solving the Laplacian for the 
     # pressure
-    if reg == 0 : RHS_p = divug
-    else : RHS_p = divug - np.matmul(qqt, divug)
+    RHS_p = divug - np.matmul(qqt, divug)
     
 #    print('Vector de valores RHS: ')        # Printing statements for checking
 #    print(RHS_p)                            # Printing statements for checking
@@ -311,9 +292,6 @@ for t in range(1, nT + 1):
     divug[T_B] = np.ones((Nx, 1)) * BC1_p[1]
     divug[L_B] = np.ones((Ny - 2, 1)) * BC1_p[2]
     divug[R_B] = np.ones((Ny - 2, 1)) * BC1_p[3]
-    
-    # Imposing boundary condition when pressure is not regularized
-    if reg == 0 : divug[tn] = 1
         
     # Solving the system
     P1 = spsolve(P_m, divug)
@@ -342,8 +320,9 @@ for t in range(1, nT + 1):
     Vgg[L_B] = np.ones((Ny - 2, 1)) * BC1_v[2]
     Vgg[R_B] = np.ones((Ny - 2, 1)) * BC1_v[3]
     
-    # Calculating the diffusive term - linear system
-    U1 = spsolve(K_x, Ugg)    
+    # Calculating the diffusive term
+    U1 = spsolve(K_x, Ugg)
+    
     V1 = spsolve(K_y, Vgg)
     
     # Checking flow incompressibility
@@ -355,6 +334,9 @@ for t in range(1, nT + 1):
     
 #    print('Mass conservation in each node (should be 0): ')
 #    print(Cons_m)
+    
+#   Extracting u and v in the center of the domain
+    
     
 # ==============================================================================
     # Plotting velocities u and v, magnitude and pressure
@@ -390,9 +372,8 @@ for t in range(1, nT + 1):
     fig3.tick_params(axis='both', which='major', labelsize=6)
     fig3.set_title('Velocity Magnitude')
     
-    fig4 = plt.subplot(2, 3, 4, projection='3d')
-    surf4 = fig4.plot_surface(X, Y, P1.reshape((Nx, Ny)), rstride=1, cstride=1,\
-                              linewidth=0, cmap=cm.coolwarm, antialiased=False)
+    fig4 = plt.subplot(2, 3, 4)
+    surf4 = fig4.contourf(X, Y, P1.reshape((Nx, Ny)), cmap=cm.coolwarm)
     fig4.set_xlim([X0, XF])
     fig4.set_ylim([Y0, YF])
     fig4.tick_params(axis='both', which='major', labelsize=6)
@@ -402,7 +383,7 @@ for t in range(1, nT + 1):
     
     fig5 = plt.subplot(2, 3, 5)
     surf5 = fig5.plot(U1[cly], yr)
-    fig5.set_xlim([-2, 2])
+    fig5.set_xlim([0, 1])
     fig5.set_ylim([0, 1])
     fig5.tick_params(axis='both', which='major', labelsize=6)
     fig5.set_xlabel(r'u velocity')
@@ -412,7 +393,7 @@ for t in range(1, nT + 1):
     fig5 = plt.subplot(2, 3, 6)
     surf5 = fig5.plot(xr,V1[clx])
     fig5.set_xlim([0, 1])
-    fig5.set_ylim([-2, 2])
+    fig5.set_ylim([0, 1])
     fig5.tick_params(axis='both', which='major', labelsize=6)
     fig5.set_xlabel(r'x axis')
     fig5.set_ylabel(r'v velocity')
