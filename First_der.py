@@ -50,8 +50,8 @@ def diffx(u, dx, L_B, L_R, R_B, R_R, dift):
     # Corrected three point upwind from Fletcher 1991    
     elif dift == 1:
         
-        # Appending nodes to the boundary and ring arrays to count every possible 
-        # scenario
+        # Appending nodes to the boundary and ring arrays to count every 
+        # possible scenario
         Nx = L_B[0]
         L_B1 = np.append(0, L_B)
         L_B1 = np.append(L_B1, L_B[-1] + Nx)

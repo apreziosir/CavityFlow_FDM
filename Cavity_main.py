@@ -43,8 +43,8 @@ Re = 100.                           # Reynolds number of the flow [-]
 # NUMERICAL PARAMETERS OF THE MODEL - MODIFIABLE PART OF THE CODE
 # ==============================================================================
 
-Nx = 51                             # Nodes in the x direction (use odd, please)
-Ny = 51                             # Nodes in the y direction (use odd, please)
+Nx = 31                             # Nodes in the x direction (use odd, please)
+Ny = 31                             # Nodes in the y direction (use odd, please)
 CFL = 0.1                           # Non dimensional timestep size [-]
 nlt = 0                             # Non linear term treatment (view t. loop)
 dift = 1                            # First derivative precision (view funct)
