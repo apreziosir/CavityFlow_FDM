@@ -34,19 +34,19 @@ XF = 1.                             # Final x coordinate [m]
 Y0 = 0.                             # Initial y coordinate [m]
 YF = 1.                             # Final y coordinate [m]
 t0 = 0.                             # Initial time [s]
-tF = 100.                           # Final time of the simulation [s]
+tF = 1000000.                       # Final time of the simulation [s]
 rho = 1000.                         # Fluid density [kg /m3] 
-nu = 1e-1                           # Kinematic viscosity [m2/s]
-Re = 100.                           # Reynolds number of the flow [-]
+nu = 1e-2                           # Kinematic viscosity [m2/s]
+Re = 500.                           # Reynolds number of the flow [-]
 
 # ==============================================================================
 # NUMERICAL PARAMETERS OF THE MODEL - MODIFIABLE PART OF THE CODE
 # ==============================================================================
 
-Nx = 31                             # Nodes in the x direction (use odd, please)
-Ny = 31                             # Nodes in the y direction (use odd, please)
-CFL = 0.1                           # Non dimensional timestep size [-]
-nlt = 0                             # Non linear term treatment (view t. loop)
+Nx = 51                             # Nodes in the x direction (use odd, please)
+Ny = 51                             # Nodes in the y direction (use odd, please)
+CFL = 0.25                          # Non dimensional timestep size [-]
+nlt = 1                             # Non linear term treatment (view t. loop)
 dift = 1                            # First derivative precision (view funct)
 Der2 = 1                            # Second derivative precision (view funct)
 reg = 1                             # P. regularization (0 = False, 1 = True)
@@ -112,8 +112,8 @@ del(maxd)                           # Deleting useless variable
 
 Sx_x = dT / (Re * dx ** 2)          # Value for viscous term matrix in x
 Sx_y = dT / (Re * dy ** 2)          # Value for viscous term matrix in y
-Sp_x = -1 / (dx ** 2)               # Value for pressure matrix in x
-Sp_y = -1 / (dy ** 2)               # Value for pressure matrix in y
+Sp_x = 1 / (dx ** 2)                # Value for pressure matrix in x
+Sp_y = 1 / (dy ** 2)                # Value for pressure matrix in y
 
 # Printing interesting results for the simulation - just to check if the 
 # set up is correct. 
@@ -224,13 +224,16 @@ for t in range(1, nT + 1):
         
         # Calculating non linear term with primitive variables for u and v 
         # velocities
-        Ug = U0 - dT * (np.multiply(U0, fd.diffx(U0, dx, L_B, L_R, R_B, R_R, \
-                        dift)) + np.multiply(V0, fd.diffy(U0, dy, B_B, B_R, \
-                        T_B, T_R, dift)))
         
-        Vg = V0 - dT * (np.multiply(U0, fd.diffx(V0, dx, L_B, L_R, R_B, R_R, \
-                        dift)) + np.multiply(V0, fd.diffy(V0, dy, B_B, B_R, \
-                        T_B, T_R, dift)))
+        tempu = np.multiply(U0, fd.diffx(U0, dx, L_B, L_R, R_B, R_R, dift)) \
+                 + np.multiply(V0, fd.diffy(U0, dy, B_B, B_R, T_B, T_R, dift))
+                 
+        Ug = U0 - dT * tempu
+        
+        tempv = np.multiply(U0, fd.diffx(V0, dx, L_B, L_R, R_B, R_R, dift)) \
+                + np.multiply(V0, fd.diffy(V0, dy, B_B, B_R, T_B, T_R, dift))
+        
+        Vg = V0 - dT * tempv
     
     # Divergence form - only appliable to  terms with same vector, the other is
     # still treated as a primitive variable    
@@ -402,7 +405,7 @@ for t in range(1, nT + 1):
     
     fig5 = plt.subplot(2, 3, 5)
     surf5 = fig5.plot(U1[cly], yr)
-    fig5.set_xlim([-2, 2])
+    fig5.set_xlim([-0.2, 1.])
     fig5.set_ylim([0, 1])
     fig5.tick_params(axis='both', which='major', labelsize=6)
     fig5.set_xlabel(r'u velocity')
@@ -412,7 +415,7 @@ for t in range(1, nT + 1):
     fig5 = plt.subplot(2, 3, 6)
     surf5 = fig5.plot(xr,V1[clx])
     fig5.set_xlim([0, 1])
-    fig5.set_ylim([-2, 2])
+    fig5.set_ylim([-0.3, 0.2])
     fig5.tick_params(axis='both', which='major', labelsize=6)
     fig5.set_xlabel(r'x axis')
     fig5.set_ylabel(r'v velocity')

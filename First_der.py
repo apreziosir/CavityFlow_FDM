@@ -33,6 +33,7 @@ def diffx(u, dx, L_B, L_R, R_B, R_R, dift):
     # Normal upwind direction
     if dift == 0:
         
+        # Internal nodes and boundaries (boundaries are later changed)
         for i in range(1, nn - 1):
             
             if u[i] >= 0:
@@ -43,9 +44,11 @@ def diffx(u, dx, L_B, L_R, R_B, R_R, dift):
                 
                 diffx[i] = (u[i + 1] - u[i]) / dx
         
-        diffx[L_B] = (u[L_B + 1] - u[i]) / dx
+        # Changing left and right boundaries values - two point upwind scheme.
+        # Fixed for L_B and R_B instead of i
+        diffx[L_B] = (u[L_B + 1] - u[L_B]) / dx
         
-        diffx[R_B] = (u[i] - u[R_B - 1]) / dx
+        diffx[R_B] = (u[R_B] - u[R_B - 1]) / dx
     
     # Corrected three point upwind from Fletcher 1991    
     elif dift == 1:
@@ -68,7 +71,7 @@ def diffx(u, dx, L_B, L_R, R_B, R_R, dift):
             # have to apply first order upwind scheme
             if np.isin(i, L_B1): 
                 
-                diffx[i] = (u[i + 1] - u[i]) / dx 
+                diffx[i] = (-u[i + 2] + 4 * u[i + 1] - 3 * u[i]) / (2 * dx) 
                     
             # Testing if element is in Left ring - Second order is applied only 
             # if velocity is negative
@@ -85,7 +88,7 @@ def diffx(u, dx, L_B, L_R, R_B, R_R, dift):
             # it is a boundary
             elif np.isin(i, R_B1): 
                 
-                diffx[i] = (u[i] - u[i - 1]) / dx
+                diffx[i] = (3 * u[i] - 4 * u[i - 1] + u[i - 2]) / (2 * dx)
                     
             # Testing if element is in right ring - Second order is applied only
             # if velocity is positive
@@ -131,7 +134,7 @@ def diffy(v, dy, B_B, B_R, T_B, T_R, dift):
     Nx = len(B_B)
     v = v.reshape((len(v), 1))
     
-    # Normal upwind direction
+    # Normal upwind direction - Two point upwind scheme applied
     if dift == 0:
         
         for i in range(B_B[-1] + 1, T_B[0]):
@@ -143,15 +146,16 @@ def diffy(v, dy, B_B, B_R, T_B, T_R, dift):
             else:
                 
                 diffy[i] = (v[i + Nx] - v[i]) / dy
-                
+        
+        # Applying differentiation in the boundaries (Top and Bottom)        
         diffy[B_B] = (v[B_B + Nx] - v[B_B]) / dy
         
         diffy[T_B] = (v[T_B] - v[T_B - Nx]) / dy
         
     elif dift == 1:
         
-        # Appending nodes to the boundary and ring arrays to count every possible 
-        # scenario
+        # Appending nodes to the boundary and ring arrays to count every 
+        # possible scenario
         B_R1 = np.append(B_R[0] - 1, B_R)
         B_R1 = np.append(B_R1, B_R[-1] + 1)
         T_R1 = np.append(T_R[0] - 1, T_R)
@@ -161,7 +165,10 @@ def diffy(v, dy, B_B, B_R, T_B, T_R, dift):
             
             # Testing if element is in Bottom boundary - since it is a 
             # boundary I have to apply first order upwind scheme
-            if np.isin(i, B_B) : diffy[i] = (v[i + Nx] - v[i]) / dy 
+            if np.isin(i, B_B): 
+                
+                diffy[i] = (-v[i + 2 * Nx] + 4 * v[i + Nx] - 3 * v[i]) / \
+                (2 * dy) 
                     
             # Testing if element is in Bottom ring - Second order is applied 
             # only if velocity is negative
@@ -175,9 +182,12 @@ def diffy(v, dy, B_B, B_R, T_B, T_R, dift):
                     (v[i - Nx] - 3 * v[i] + 3 * v[i + Nx] - v[i + 2 * Nx]) \
                     / (3 * dy)
                     
-            # Testing if element is in top boundary - First order upwind since
-            # it is a boundary
-            elif np.isin(i, T_B) : diffy[i] = (v[i] - v[i - Nx]) / dy               
+            # Testing if element is in top boundary - Second order upwind from 
+            # the boundary. 
+            elif np.isin(i, T_B):
+                
+                diffy[i] = (3 * v[i] - 4 * v[i - Nx] + v[i - 2 * Nx]) / \
+                (2 * dy)
                     
             # Testing if element is in top ring - Second order is applied only
             # if velocity is positive
