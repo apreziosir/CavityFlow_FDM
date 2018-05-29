@@ -34,7 +34,7 @@ XF = 1.                             # Final x coordinate [m]
 Y0 = 0.                             # Initial y coordinate [m]
 YF = 1.                             # Final y coordinate [m]
 t0 = 0.                             # Initial time [s]
-tF = 100000000.                     # Final time of the simulation [s]
+tF = 100000.                        # Final time of the simulation [s]
 rho = 1000.                         # Fluid density [kg /m3] 
 nu = 1e-6                           # Kinematic viscosity [m2/s]
 Re = 100.                           # Reynolds number of the flow [-]
@@ -167,6 +167,27 @@ P_m = P_m.tocsr()
 # loop of the program to regularize pressure with Neumann BC) 
 if reg == 1 : qqt = pr.Regularization(P_m)
 else : qqt = 1.0
+
+# ==============================================================================
+# VALUES OF GHIA ET AL. 1986 FOR COMPARING (just for plotting part)
+# Works when Re = 100 (JUST WHEN REYNOLDS = 100!!!!)
+# ==============================================================================
+
+# Coordinates alosng center lines
+Gx = np.array([1., 0.9688, 0.9609, 0.9531, 0.9453, 0.9063, 0.8594, 0.8047, \
+               0.500, 0.2344, 0.2266, 0.1563, 0.0938, 0.0781, 0.0703, 0.0625, \
+               0.])
+Gy = np.array([1., 0.9766, 0.9688, 0.9609, 0.9531, 0.8516, 0.7344, 0.6172, \
+               0.500, 0.4531, 0.2813, 0.1719, 0.1016, 0.0703, 0.0625, 0.0547, \
+               0.])
+
+# Velocities along center lines
+Gu = np.array([1., 0.84123, 0.78871, 0.73722, 0.68717, 0.23151, 0.00332, \
+               -0.13641, -0.20581, -0.21090, -0.15662, -0.10150, -0.06434, \
+               -0.04775, -0.04192, -0.03717, 0.])
+Gv = np.array([0., -0.05906, -0.07391, -0.08864, -0.10313, -0.16914, -0.22445, \
+               -0.24533, 0.05454, 0.17527, 0.17507, 0.16077, 0.12317, 0.10890, \
+               0.10091, 0.09233, 0.])
 
 # ==============================================================================
 # INITIAL CONIDTION FOR THE CAVITY PROBLEM - USUALLY IT IS A U = 0 AND V = 0
@@ -405,7 +426,8 @@ for t in range(1, nT + 1):
     
     fig5 = plt.subplot(2, 3, 5)
     surf5 = fig5.plot(U1[cly], yr)
-    fig5.set_xlim([-0.2, 1.])
+    surf6 = fig5.scatter(Gu, Gy, 6, 'b')
+    fig5.set_xlim([-0.25, 1.05])
     fig5.set_ylim([0, 1])
     fig5.tick_params(axis='both', which='major', labelsize=6)
     fig5.set_xlabel(r'u velocity')
@@ -414,6 +436,7 @@ for t in range(1, nT + 1):
     
     fig5 = plt.subplot(2, 3, 6)
     surf5 = fig5.plot(xr,V1[clx])
+    surf6 = fig5.scatter(Gx, Gv, 6, 'b')
     fig5.set_xlim([0, 1])
     fig5.set_ylim([-0.3, 0.2])
     fig5.tick_params(axis='both', which='major', labelsize=6)
