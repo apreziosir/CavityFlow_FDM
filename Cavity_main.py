@@ -34,10 +34,10 @@ XF = 1.                             # Final x coordinate [m]
 Y0 = 0.                             # Initial y coordinate [m]
 YF = 1.                             # Final y coordinate [m]
 t0 = 0.                             # Initial time [s]
-tF = 1000000.                       # Final time of the simulation [s]
+tF = 100000000.                     # Final time of the simulation [s]
 rho = 1000.                         # Fluid density [kg /m3] 
-nu = 1e-2                           # Kinematic viscosity [m2/s]
-Re = 500.                           # Reynolds number of the flow [-]
+nu = 1e-6                           # Kinematic viscosity [m2/s]
+Re = 100.                           # Reynolds number of the flow [-]
 
 # ==============================================================================
 # NUMERICAL PARAMETERS OF THE MODEL - MODIFIABLE PART OF THE CODE
@@ -45,8 +45,8 @@ Re = 500.                           # Reynolds number of the flow [-]
 
 Nx = 51                             # Nodes in the x direction (use odd, please)
 Ny = 51                             # Nodes in the y direction (use odd, please)
-CFL = 0.25                          # Non dimensional timestep size [-]
-nlt = 1                             # Non linear term treatment (view t. loop)
+CFL = 0.75                          # Non dimensional timestep size [-]
+nlt = 0                             # Non linear term treatment (view t. loop)
 dift = 1                            # First derivative precision (view funct)
 Der2 = 1                            # Second derivative precision (view funct)
 reg = 1                             # P. regularization (0 = False, 1 = True)
@@ -356,8 +356,8 @@ for t in range(1, nT + 1):
     # Calculating velocity magnitude
     mag = np.multiply(U1, V1)
     
-#    print('Mass conservation in each node (should be 0): ')
-#    print(Cons_m)
+    print('Mass conservation in each node (should be 0): ')
+    print(Cons_m)
     
 # ==============================================================================
     # Plotting velocities u and v, magnitude and pressure
